@@ -9,6 +9,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
+import org.springframework.security.oauth2.server.resource.web.BearerTokenResolver;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -34,12 +35,33 @@ public class SecurityConfig {
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             )
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/**").permitAll()
+                .requestMatchers("/api/auth/**", "/error", "/actuator/gateway/routes").permitAll()
                 .anyRequest().authenticated()
             )
-            .oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()));
+            .oauth2ResourceServer(oauth2 -> oauth2
+                .bearerTokenResolver(bearerTokenResolver())
+                .jwt(Customizer.withDefaults())
+            );
 
         return http.build();
+    }
+
+    @Bean
+    public BearerTokenResolver bearerTokenResolver() {
+        return request -> {
+            String uri = request.getRequestURI();
+            String header = request.getHeader("Authorization");
+            System.out.println("[BearerTokenResolver] URI: " + uri + " | Auth header: " + header);
+
+            if (uri.startsWith("/api/auth/") || uri.equals("/error") || uri.equals("/actuator/gateway/routes")) {
+                System.out.println("[BearerTokenResolver] Auth route — skipping JWT");
+                return null;
+            }
+            if (header != null && header.startsWith("Bearer ")) {
+                return header.substring(7);
+            }
+            return null;
+        };
     }
 
     @Bean
