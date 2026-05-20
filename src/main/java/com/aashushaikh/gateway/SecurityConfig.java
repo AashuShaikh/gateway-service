@@ -1,5 +1,8 @@
 package com.aashushaikh.gateway;
 
+import com.aashushaikh.gateway.exception.CustomAccessDeniedHandler;
+import com.aashushaikh.gateway.exception.CustomAuthenticationEntryPoint;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -7,6 +10,7 @@ import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.resource.web.BearerTokenResolver;
@@ -21,26 +25,37 @@ import java.util.List;
 
 @Configuration
 @EnableWebSecurity
+@RequiredArgsConstructor
 public class SecurityConfig {
 
     @Value("${jwt.secret}")
     private String secret;
+
+    private final CustomAuthenticationEntryPoint authenticationEntryPoint;
+    private final CustomAccessDeniedHandler accessDeniedHandler;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(csrf -> csrf.disable())
+            .formLogin(form -> form.disable())
+            .httpBasic(basic -> basic.disable())
             .sessionManagement(session -> session
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             )
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/**", "/error", "/actuator/gateway/routes").permitAll()
+                .requestMatchers("/auth/internal/**", "/chats/internal/**").denyAll()
+                .requestMatchers("/auth/**", "/error", "/actuator/gateway/routes").permitAll()
                 .anyRequest().authenticated()
             )
             .oauth2ResourceServer(oauth2 -> oauth2
                 .bearerTokenResolver(bearerTokenResolver())
                 .jwt(Customizer.withDefaults())
+                .authenticationEntryPoint(authenticationEntryPoint)
+            )
+            .exceptionHandling(ex -> ex
+                .accessDeniedHandler(accessDeniedHandler)
             );
 
         return http.build();
@@ -53,7 +68,7 @@ public class SecurityConfig {
             String header = request.getHeader("Authorization");
             System.out.println("[BearerTokenResolver] URI: " + uri + " | Auth header: " + header);
 
-            if (uri.startsWith("/api/auth/") || uri.equals("/error") || uri.equals("/actuator/gateway/routes")) {
+            if (uri.startsWith("/auth/") || uri.equals("/error") || uri.equals("/actuator/gateway/routes")) {
                 System.out.println("[BearerTokenResolver] Auth route — skipping JWT");
                 return null;
             }
@@ -68,7 +83,9 @@ public class SecurityConfig {
     public JwtDecoder jwtDecoder() {
         byte[] keyBytes = Base64.getDecoder().decode(secret);
         SecretKeySpec secretKey = new SecretKeySpec(keyBytes, "HmacSHA256");
-        return NimbusJwtDecoder.withSecretKey(secretKey).build();
+        return NimbusJwtDecoder.withSecretKey(secretKey)
+                .macAlgorithm(MacAlgorithm.HS256)
+                .build();
     }
 
     @Bean

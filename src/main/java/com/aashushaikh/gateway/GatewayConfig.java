@@ -16,7 +16,7 @@ public class GatewayConfig {
     @Bean
     public RouterFunction<ServerResponse> authRoute() {
         return GatewayRouterFunctions.route("auth-route")
-                .route(path("/api/auth/**"), HandlerFunctions.http())
+                .route(path("/auth/**"), HandlerFunctions.http())
                 .filter(LoadBalancerFilterFunctions.lb("auth"))
                 .build();
     }
@@ -24,7 +24,7 @@ public class GatewayConfig {
     @Bean
     public RouterFunction<ServerResponse> userRoute() {
         return GatewayRouterFunctions.route("user-route")
-                .route(path("/api/users/**"), HandlerFunctions.http())
+                .route(path("/users/**"), HandlerFunctions.http())
                 .filter(LoadBalancerFilterFunctions.lb("user"))
                 .build();
     }
@@ -32,7 +32,7 @@ public class GatewayConfig {
     @Bean
     public RouterFunction<ServerResponse> messageRoute() {
         return GatewayRouterFunctions.route("message-route")
-                .route(path("/api/messages/**"), HandlerFunctions.http())
+                .route(path("/messages/**"), HandlerFunctions.http())
                 .filter(LoadBalancerFilterFunctions.lb("message"))
                 .build();
     }
@@ -40,7 +40,7 @@ public class GatewayConfig {
     @Bean
     public RouterFunction<ServerResponse> chatRoute() {
         return GatewayRouterFunctions.route("chat-route")
-                .route(path("/api/chats/**"), HandlerFunctions.http())
+                .route(path("/chats/**"), HandlerFunctions.http())
                 .filter(LoadBalancerFilterFunctions.lb("chat"))
                 .build();
     }
@@ -48,7 +48,7 @@ public class GatewayConfig {
     @Bean
     public RouterFunction<ServerResponse> notificationRoute() {
         return GatewayRouterFunctions.route("notification-route")
-                .route(path("/api/notifications/**"), HandlerFunctions.http())
+                .route(path("/notifications/**"), HandlerFunctions.http())
                 .filter(LoadBalancerFilterFunctions.lb("notification"))
                 .build();
     }
