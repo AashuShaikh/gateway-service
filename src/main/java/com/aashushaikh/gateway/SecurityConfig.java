@@ -45,7 +45,7 @@ public class SecurityConfig {
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             )
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/auth/internal/**", "/chats/internal/**").denyAll()
+                .requestMatchers("/auth/internal/**", "/chats/internal/**", "/messages/internal/**").denyAll()
                 .requestMatchers("/auth/**", "/error", "/actuator/gateway/routes").permitAll()
                 .anyRequest().authenticated()
             )
